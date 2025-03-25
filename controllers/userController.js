@@ -58,7 +58,7 @@ class UserController {
         const {email, password} = req.body
         const user = await User.findOne({where: {email}})
         if (!user) {
-            return next(ApiError.internal('Пользователь не найден'))
+            return next(ApiError.internal( 'Пользователь не найден'))
         }
         let comparePassword = bcrypt.compareSync(password, user.password)
         if (!comparePassword) {
@@ -150,6 +150,18 @@ class UserController {
         const users = await User.findAll()
        
         return res.json(users);
+    }
+
+    async deleteUser(req, res) {
+        const {id} = req.body;
+        const user =  await User.destroy({
+            where: {
+              id: id,
+            },
+          });
+        
+
+        return res.json(user);
     }
 
     async setWellTests(req, res) {
