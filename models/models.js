@@ -13,7 +13,7 @@ const User = sequelize.define('user', {
     organiztion: {type: DataTypes.STRING},
     inn: {type: DataTypes.STRING},
 
-    // forgot_pass_code: {type: DataTypes.STRING},
+    forgot_pass_code: {type: DataTypes.STRING},
     well_videos: {type: DataTypes.INTEGER, defaultValue: 0},
     well_tests: {type: DataTypes.INTEGER, defaultValue: 0},
     well_practical_works: {type: DataTypes.INTEGER, defaultValue: 0},
@@ -69,7 +69,7 @@ const Test = sequelize.define('test', {
     id: {type: DataTypes.DOUBLE, primaryKey: true},
     title: {type: DataTypes.STRING},
     admin_id: {type: DataTypes.INTEGER},
-    
+    time_limit: {type: DataTypes.INTEGER},
 })
 
 const TestPunct = sequelize.define('test_punct', {
@@ -85,22 +85,35 @@ const UserProgram = sequelize.define('user_program', {
     
 })
 
+const Statistic = sequelize.define('statistic', {
+    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    users_id: {type: DataTypes.INTEGER},
+    programs_id: {type: DataTypes.INTEGER},
+
+    well_videos: {type: DataTypes.INTEGER, defaultValue: 0},
+    well_tests: {type: DataTypes.INTEGER, defaultValue: 0},
+    well_practical_works: {type: DataTypes.INTEGER, defaultValue: 0},
+
+    max_videos: {type: DataTypes.INTEGER, defaultValue: 0},
+    max_tests: {type: DataTypes.INTEGER, defaultValue: 0},
+    max_practical_works: {type: DataTypes.INTEGER, defaultValue: 0},
+})
 
 
 
 Admin.hasMany(Program)
 Program.belongsTo(Admin)
 
-Program.hasMany(Theme)
+Program.hasMany(Theme, { onDelete: 'cascade', hooks: true })
 Theme.belongsTo(Program)
 
-Theme.hasMany(Punct)
+Theme.hasMany(Punct, { onDelete: 'cascade', hooks: true })
 Punct.belongsTo(Theme)
 
-Punct.hasOne(Test)
+Punct.hasOne(Test, { onDelete: 'cascade', hooks: true })
 Test.belongsTo(Punct)
 
-Test.hasMany(TestPunct)
+Test.hasMany(TestPunct, { onDelete: 'cascade', hooks: true })
 TestPunct.belongsTo(Test);
 
 Admin.hasMany(User)
@@ -109,9 +122,15 @@ User.belongsTo(Admin)
 User.belongsToMany(Program, {through: UserProgram})
 Program.belongsToMany(User, {through: UserProgram})
 
+User.hasMany(Statistic)
+Statistic.belongsTo(User)
+
+Program.hasOne(Statistic)
+Statistic.belongsTo(Program)
+
 
 
 
 module.exports = {
-    User, Admin, Program, Theme, Punct, Application, Test, TestPunct
+    User, Admin, Program, Theme, Punct, Application, Test, TestPunct, Statistic
 }

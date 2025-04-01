@@ -3,14 +3,15 @@ const ApiError = require('../error/ApiError')
 const { Op } = require('sequelize');
 const uuid = require('uuid')
 const path = require('path');
-const fs =  require('fs')
+const fs =  require('fs');
+const { time } = require("console");
 
 class TestController {
     async create(req, res) {
-        const {title, puncts} = req.body;
+        const {title, puncts, time_limit} = req.body;
 
     
-        const testCreate = await Test.create({id: Math.floor(Math.random()*9000000) + 1000000, title: title})
+        const testCreate = await Test.create({id: Math.floor(Math.random()*9000000) + 1000000, title: title, time_limit: time_limit})
     
       
         puncts.forEach( async (punct) => {
@@ -30,7 +31,7 @@ class TestController {
                 where: {id}
             },
         )
-        
+       
         const puncts = await TestPunct.findAll(
             {
                 where: {testId: test.id}
@@ -41,6 +42,29 @@ class TestController {
        
 
         return res.json(test)
+    }
+
+    async remakeTest(req, res) {
+        const {id, title, time_limit, puncts} = req.body;
+        console.log(id);
+    
+        const testCreate = await Test.findOne({where: {id}})
+        testCreate.title = title;
+        testCreate.time_limit = time_limit;
+       
+        const testPuncts = await TestPunct.destroy(
+            {
+                where: {testId: id}
+            }
+        )
+        puncts.forEach( async (punct) => {
+            let punctCreate = await TestPunct.create({question: punct.question, answers: punct.answers, correct_answer: punct.correct_answer, several_answers: punct.several_answers, testId: testCreate.id})
+        })
+
+        testCreate.save();
+
+        
+        return res.json({testCreate})
     }
 
    

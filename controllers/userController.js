@@ -1,7 +1,7 @@
 const ApiError = require('../error/ApiError');
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
-const {User} = require('../models/models')
+const {User, Statistic, Program} = require('../models/models')
 const nodemailer = require('nodemailer');
 
 const generateJwt = (id, email, role) => {
@@ -24,7 +24,16 @@ class UserController {
         }
         const hashPassword = await bcrypt.hash(password, 5)
         const user = await User.create({email, role, password: hashPassword, name, number, organiztion, programs_id, diplom})
-   
+
+        let program = await Program.findOne({where: {id: programs_id[0]}})
+      
+        const statistic = await Statistic.create({
+            users_id: user.id, 
+            programs_id: program.id, 
+            max_videos: program.number_of_videos,
+            max_tests: program.number_of_test,
+            max_practical_works: program.number_of_practical_work,})
+
         const token = generateJwt(user.id, user.email, user.role)
         return res.json({token})
     }
@@ -79,13 +88,15 @@ class UserController {
             }
         })
 
-        const code = Math.round(Math.random()*1000);
-        const hashCode = bcrypt.hash(`${code}`, 5)
+        const code = Math.round(Math.random()*1000+1000);
+        const hashCode = await bcrypt.hash(`${code}`, 5)
 
-        const user = User.findOne({where: {email}})
+        const user = await User.findOne({where: {email}})
 
         user.forgot_pass_code = hashCode;
 
+        console.log(hashCode);
+        user.save();
         const mailOptions = {
             from: "chabanovdan@gmail.com",
             to: email,
@@ -110,24 +121,26 @@ class UserController {
 
         await send();
 
-        return req.json({user});
+        return res.json({user});
     }
 
     async checkForgotPassword(req, res, next) {
         const {email, code, pass} = req.body;
 
-        const user = User.findOne({where: {email}})
+        const user = await User.findOne({where: {email}})
 
-
+        console.log(code, user.forgot_pass_code);
         let comparePassword = bcrypt.compareSync(code, user.forgot_pass_code)
         if (!comparePassword) {
             return next(ApiError.internal('код неверный'))
         }
 
-        const hashPass = bcrypt.hash(pass, 5)
+        const hashPass = await bcrypt.hash(pass, 5)
 
         user.password = hashPass;
-        
+        user.forgot_pass_code = null;
+
+        user.save();
 
         return res.json({user})
     }
