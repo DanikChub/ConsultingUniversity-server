@@ -1,7 +1,8 @@
 const ApiError = require('../error/ApiError');
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
-const {User, Statistic, Program} = require('../models/models')
+const {User, Statistic, Program, Theme, Punct, ThemeStatistic, PunctStatistic} = require('../models/models')
+const { Op } = require('sequelize');
 const nodemailer = require('nodemailer');
 
 const generateJwt = (id, email, role) => {
@@ -25,14 +26,79 @@ class UserController {
         const hashPassword = await bcrypt.hash(password, 5)
         const user = await User.create({email, role, password: hashPassword, name, number, organiztion, programs_id, diplom})
 
+
+
+
+
+
+
+
+
         let program = await Program.findOne({where: {id: programs_id[0]}})
-      
-        const statistic = await Statistic.create({
+
+        let statistic = await Statistic.create({
             users_id: user.id, 
             programs_id: program.id, 
             max_videos: program.number_of_videos,
             max_tests: program.number_of_test,
-            max_practical_works: program.number_of_practical_work,})
+            max_practical_works: program.number_of_practical_work
+        })
+
+        const themes = await Theme.findAll(
+            {
+                where: {
+                    programId: program.id
+                }
+            }
+        )
+      
+
+        let arrOfThemeId = []
+        let themesStatisticArray = []
+
+        themes.forEach(async theme => {
+       
+               
+            
+            arrOfThemeId.push(theme.id);
+        })
+   
+        
+        let puncts = await Punct.findAll(
+            {
+                where: {
+                    themeId: {
+                        [Op.or]: arrOfThemeId,
+                    }
+                    
+                }
+            }
+        )
+        
+        themes.forEach(async (theme, i) => {
+            let themeStatic = await ThemeStatistic.create({theme_id: theme.id,
+                well: false, statisticId: statistic.id});
+       
+            puncts.forEach(async (punct) => {
+                if (theme.id == punct.themeId) {
+                    let punctStatic = await PunctStatistic.create(
+                        {   punct_id: punct.id,
+                            lection: false,
+                            practical_work: null,
+                            video: false,
+                            test_bool: false,
+                            themeStatisticId: themeStatic.id
+                        })
+                }
+                
+                
+
+               
+            })
+            
+        })
+
+        
 
         const token = generateJwt(user.id, user.email, user.role)
         return res.json({token})
@@ -79,7 +145,7 @@ class UserController {
 
     async forgotPassword(req, res) {
         const {email} = req.body;
-        console.log(email);
+       
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -95,7 +161,7 @@ class UserController {
 
         user.forgot_pass_code = hashCode;
 
-        console.log(hashCode);
+        
         user.save();
         const mailOptions = {
             from: "chabanovdan@gmail.com",
@@ -129,7 +195,7 @@ class UserController {
 
         const user = await User.findOne({where: {email}})
 
-        console.log(code, user.forgot_pass_code);
+       
         let comparePassword = bcrypt.compareSync(code, user.forgot_pass_code)
         if (!comparePassword) {
             return next(ApiError.internal('код неверный'))

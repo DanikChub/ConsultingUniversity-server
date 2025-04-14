@@ -46,14 +46,14 @@ const Program = sequelize.define('program', {
     number_of_practical_work: {type: DataTypes.INTEGER, allowNull: false},
     number_of_test: {type: DataTypes.INTEGER, allowNull: false},
     number_of_videos: {type: DataTypes.INTEGER, allowNull: false},
-    presentation_src: {type: DataTypes.STRING}
+    
 })
 
 const Theme = sequelize.define('theme', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
     title: {type: DataTypes.STRING},
     admin_id: {type: DataTypes.INTEGER},
-    
+    presentation_src: {type: DataTypes.STRING}
 })
 
 const Punct = sequelize.define('punct', {
@@ -61,6 +61,8 @@ const Punct = sequelize.define('punct', {
     title: {type: DataTypes.STRING},
     admin_id: {type: DataTypes.INTEGER},
     lection_src: {type: DataTypes.STRING},
+    lection_title: {type: DataTypes.STRING},
+    practical_work: {type: DataTypes.STRING},
     video_src: {type: DataTypes.STRING},
     test_id: {type: DataTypes.STRING},
 })
@@ -99,6 +101,31 @@ const Statistic = sequelize.define('statistic', {
     max_practical_works: {type: DataTypes.INTEGER, defaultValue: 0},
 })
 
+const ThemeStatistic = sequelize.define('theme_statistic', {
+    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    theme_id: {type: DataTypes.INTEGER},
+    admin_id: {type: DataTypes.INTEGER},
+    well: {type: DataTypes.BOOLEAN},
+})
+
+const PunctStatistic = sequelize.define('punct_statistic', {
+    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    punct_id: {type: DataTypes.INTEGER},
+    admin_id: {type: DataTypes.INTEGER},
+    lection: {type: DataTypes.BOOLEAN},
+    practical_work: {type: DataTypes.STRING},
+    video: {type: DataTypes.BOOLEAN},
+    test_bool: {type: DataTypes.BOOLEAN},
+})
+
+const PracticalWork = sequelize.define('practical_work', {
+    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    task: {type: DataTypes.STRING},
+    file_src: {type: DataTypes.STRING},
+    answer: {type: DataTypes.STRING},
+    users_id: {type: DataTypes.INTEGER}
+})
+
 
 
 Admin.hasMany(Program)
@@ -125,12 +152,21 @@ Program.belongsToMany(User, {through: UserProgram})
 User.hasMany(Statistic)
 Statistic.belongsTo(User)
 
+Statistic.hasMany(ThemeStatistic, { onDelete: 'cascade', hooks: true })
+ThemeStatistic.belongsTo(Statistic)
+
+ThemeStatistic.hasMany(PunctStatistic, { onDelete: 'cascade', hooks: true })
+PunctStatistic.belongsTo(ThemeStatistic)
+
 Program.hasOne(Statistic)
 Statistic.belongsTo(Program)
 
 
+User.hasMany(PracticalWork)
+PracticalWork.belongsTo(User)
+
 
 
 module.exports = {
-    User, Admin, Program, Theme, Punct, Application, Test, TestPunct, Statistic
+    User, Admin, Program, Theme, Punct, Application, Test, TestPunct, Statistic, ThemeStatistic, PunctStatistic, PracticalWork
 }

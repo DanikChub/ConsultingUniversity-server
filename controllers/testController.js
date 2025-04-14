@@ -26,19 +26,29 @@ class TestController {
 
     async getOne(req, res) {
         const {id} = req.params
-        const test = await Test.findOne(
-            {
-                where: {id}
-            },
-        )
-       
-        const puncts = await TestPunct.findAll(
-            {
-                where: {testId: test.id}
+        let test = null;
+        console.log(id);
+        try {
+            if (id) {
+                test = await Test.findOne(
+                    {
+                        where: {id}
+                    },
+                )
+               
+                const puncts = await TestPunct.findAll(
+                    {
+                        where: {testId: test.id}
+                    }
+                )
+        
+                test.dataValues["puncts"] = puncts
             }
-        )
+            
+        } catch(e) {
 
-        test.dataValues["puncts"] = puncts
+        }
+        
        
 
         return res.json(test)
@@ -46,7 +56,7 @@ class TestController {
 
     async remakeTest(req, res) {
         const {id, title, time_limit, puncts} = req.body;
-        console.log(id);
+       
     
         const testCreate = await Test.findOne({where: {id}})
         testCreate.title = title;
@@ -64,6 +74,14 @@ class TestController {
         testCreate.save();
 
         
+        return res.json({testCreate})
+    }
+
+    async deleteTest(req, res) {
+        const {id} = req.body;
+        const testCreate = await Test.destroy({where: {id}})
+
+
         return res.json({testCreate})
     }
 

@@ -19,6 +19,7 @@ class ProgramController {
                 let {docs} = files;
                 if (Array.isArray(docs)) {
                     docs.forEach(el => {
+                      
                         let fileName = uuid.v4() + ".docx"
                         el.mv(path.resolve(__dirname, '..', 'static', fileName))
                         arr_of_titles.push(fileName);
@@ -34,14 +35,28 @@ class ProgramController {
 
         }
 
-        let presentationName = '';
+        let presentationNames = [];
         try {
             if (files.presentation_src != null) {
+
+              
                 let {presentation_src} = files;
+             
+                if (Array.isArray(presentation_src)) {
+                    presentation_src.forEach(el => {
+                        
+                        let fileName = uuid.v4() + ".pdf"
+                        el.mv(path.resolve(__dirname, '..', 'static', fileName))
+                        presentationNames.push(fileName);
+                    })
+                    
+                } else {
+                    let fileName = uuid.v4() + ".pdf"
+                    presentation_src.mv(path.resolve(__dirname, '..', 'static', fileName))
+                    presentationNames.push(fileName);
+                }
                 
-                let fileName = uuid.v4() + ".pptx"
-                presentation_src.mv(path.resolve(__dirname, '..', 'static', fileName))
-                presentationName = fileName;
+
 
                     
             }
@@ -53,18 +68,18 @@ class ProgramController {
         
         
      
-        const program = await Program.create({title, admin_id, number_of_practical_work, number_of_test, number_of_videos, presentation_src: presentationName})
+        const program = await Program.create({title, admin_id, number_of_practical_work, number_of_test, number_of_videos})
         let theme;
         let punct;
 
-        
+       
         parsedThemes.forEach( async (theme_el)  =>  {
-            
-            theme = await Theme.create({title: theme_el.title, programId: program.id})
+            console.log(theme_el.presentation_id)
+            theme = await Theme.create({title: theme_el.title, programId: program.id, presentation_src: presentationNames[theme_el.presentation_id]})
            
             theme_el.puncts.forEach(async (punct_el, i) => {
               
-                punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], test_id: punct_el.test_id})
+                punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], lection_title: punct_el.lection_title, practical_work: punct_el.practical_work, test_id: punct_el.test_id})
                 
                     
                
@@ -127,8 +142,12 @@ class ProgramController {
 
                
             })
+
+            arr.sort((a, b) => a.id - b.id)
             theme.dataValues["puncts"] = arr;
         })
+
+        themes.sort((a, b) => a.id - b.id)
         program.dataValues["themes"] = themes;
 
         return res.json(program)
@@ -199,6 +218,34 @@ class ProgramController {
         }
         
         
+        let presentationNames = [];
+        try {
+            if (files.presentation_src != null) {
+
+              
+                let {presentation_src} = files;
+             
+                if (Array.isArray(presentation_src)) {
+                    presentation_src.forEach(el => {
+                        
+                        let fileName = uuid.v4() + ".pdf"
+                        el.mv(path.resolve(__dirname, '..', 'static', fileName))
+                        presentationNames.push(fileName);
+                    })
+                    
+                } else {
+                    let fileName = uuid.v4() + ".pdf"
+                    presentation_src.mv(path.resolve(__dirname, '..', 'static', fileName))
+                    presentationNames.push(fileName);
+                }
+                
+
+
+                    
+            }
+        } catch (e) {
+
+        }
         
         
      
@@ -211,17 +258,20 @@ class ProgramController {
         let theme;
         let punct;
         theme = await Theme.destroy({where: {programId: program.id}})
-        
+        console.log(presentationNames);
         parsedThemes.forEach( async (theme_el)  =>  {
             
-            theme = await Theme.create({title: theme_el.title, programId: program.id})
-
+            theme = await Theme.create({title: theme_el.title, programId: program.id, presentation_src: presentationNames[theme_el.presentation_id]})
+            
+            
             theme_el.puncts.forEach(async (punct_el, i) => {
-                punct = await Punct.destroy({where: {themeId: theme.id}})
+               
+                
+                punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id]?arr_of_titles[punct_el.lection_id]:punct_el.lection_src, test_id: punct_el.test_id})
+  
             })
             theme_el.puncts.forEach(async (punct_el, i) => {
-                punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], test_id: punct_el.test_id})
-  
+                punct = await Punct.destroy({where: {themeId: theme.id}})
             })
         })
 
