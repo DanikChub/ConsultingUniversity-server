@@ -9,5 +9,7 @@ router.get('/', ProgramController.getAll)
 router.post('/delete', checkRole('ADMIN'), ProgramController.deleteProgram)
 router.post('/remake', checkRole('ADMIN'), ProgramController.remake)
 router.get('/:id', ProgramController.getOne)
+router.get('/punct/:id', ProgramController.getOnePunct)
+router.get('/theme/:id', ProgramController.getOneTheme)
 
 module.exports = router;

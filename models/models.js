@@ -12,6 +12,8 @@ const User = sequelize.define('user', {
     diplom: {type: DataTypes.BOOLEAN},
     organiztion: {type: DataTypes.STRING},
     inn: {type: DataTypes.STRING},
+    
+    graduation_date: {type: DataTypes.DATE},
 
     forgot_pass_code: {type: DataTypes.STRING},
     well_videos: {type: DataTypes.INTEGER, defaultValue: 0},
@@ -53,15 +55,24 @@ const Theme = sequelize.define('theme', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
     title: {type: DataTypes.STRING},
     admin_id: {type: DataTypes.INTEGER},
-    presentation_src: {type: DataTypes.STRING}
+    presentation_src: {type: DataTypes.STRING},
+    presentation_title: {type: DataTypes.STRING},
+    lection_src: {type: DataTypes.STRING},
+    lection_title: {type: DataTypes.STRING},
+    lection_id: {type: DataTypes.STRING},
+    lection_html: {type: DataTypes.TEXT},
+    video_src: {type: DataTypes.STRING},
 })
 
 const Punct = sequelize.define('punct', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    punct_id: {type: DataTypes.INTEGER},
     title: {type: DataTypes.STRING},
     admin_id: {type: DataTypes.INTEGER},
     lection_src: {type: DataTypes.STRING},
     lection_title: {type: DataTypes.STRING},
+    lection_id: {type: DataTypes.STRING},
+    lection_html: {type: DataTypes.TEXT},
     practical_work: {type: DataTypes.STRING},
     video_src: {type: DataTypes.STRING},
     test_id: {type: DataTypes.STRING},

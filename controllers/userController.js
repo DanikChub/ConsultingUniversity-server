@@ -104,6 +104,58 @@ class UserController {
         return res.json({token})
     }
 
+    async setGraduationDate(req, res, next) {
+        const {id, graduation_date} = req.body
+
+        const user = await User.findOne({where: {id}})
+        
+
+        if (!user.graduation_date) {
+            user.graduation_date = graduation_date;
+            user.save();
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: 'chabanovdan@gmail.com',
+                    pass: 'fmdn veek hhnz wirs'
+                }
+            })
+    
+            
+            const mailOptions = {
+                from: "chabanovdan@gmail.com",
+                to: "chabanovdan@gmail.com",
+                subject: 'Поздравляем с окончанием обучения!',
+                html: `
+                    <h1>Поздравляем вас с окончанием обучения!: </h1>
+                    
+                    
+                `
+            }
+    
+            const send = () => {
+                return new Promise((resolve, reject) => {
+                    transporter.sendMail(mailOptions, (error, info) => {
+                        if (error) {
+                            reject(error);
+                        }
+                        resolve(info);
+                    })
+                })
+            }
+    
+            await send();
+            
+        } 
+
+       
+
+        
+
+        return res.json(user);
+        
+    }
+
     async remakeUser(req, res, next) {
         const {id, email, password, role, name, number, organiztion, programs_id, diplom} = req.body
         

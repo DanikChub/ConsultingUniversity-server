@@ -30,7 +30,7 @@ class StatisticController {
     }
 
     async updateTests(req, res) {
-        const {users_id, programs_id, punct_id} = req.body;
+        const {users_id, programs_id, punct_id, theme_id} = req.body;
 
         let punctStatic = await PunctStatistic.findOne({
             where: {
@@ -43,10 +43,24 @@ class StatisticController {
                 [Op.and]: [{ users_id: users_id, programs_id: programs_id }]
             }
         })
+
+    
+
         if (statistic.well_tests < statistic.max_tests && !punctStatic.test_bool) {
             statistic.well_tests += 1;
             punctStatic.test_bool = true
         }
+
+
+        const theme = await ThemeStatistic.findOne({
+            where: {
+                id: theme_id
+            }
+        })
+
+        theme.well = true;
+        theme.save();
+
         
         statistic.save();
         punctStatic.save();
@@ -91,49 +105,54 @@ class StatisticController {
             }
         })
      
-
-       
-        const themes = await ThemeStatistic.findAll(
-            {
-                where: {
-                    statisticId: statistic.id
+        let themes;
+        if (statistic) {
+            themes = await ThemeStatistic.findAll(
+                {
+                    where: {
+                        statisticId: statistic.id
+                    }
                 }
-            }
-        )
+            )
+            let arrOfThemeId = []
+
+            themes.forEach(async theme => {
+                
+                arrOfThemeId.push(theme.dataValues.id);
+            })
+            
+            let puncts = await PunctStatistic.findAll(
+                {
+                    where: {
+                        themeStatisticId: {
+                            [Op.or]: arrOfThemeId,
+                        }
+                        
+                    }
+                }
+            )
+            
+            themes.forEach((theme, i) => {
+                let arr = [];
+                puncts.forEach((punct) => {
+                    
+                    if (theme.id == punct.themeStatisticId) {
+                        arr.push(punct)
+                    }
+
+                
+                })
+                arr.sort((a,b) => a.id-b.id);
+                theme.dataValues["punctsStatistic"] = arr;
+            })
+
+            themes.sort((a, b) => a.id - b.id);
+            statistic.dataValues["themesStatistic"] = themes;
+        }
+        
       
 
-        let arrOfThemeId = []
-
-        themes.forEach(async theme => {
-            
-            arrOfThemeId.push(theme.dataValues.id);
-        })
         
-        let puncts = await PunctStatistic.findAll(
-            {
-                where: {
-                    themeStatisticId: {
-                        [Op.or]: arrOfThemeId,
-                    }
-                    
-                }
-            }
-        )
-        
-        themes.forEach((theme, i) => {
-            let arr = [];
-            puncts.forEach((punct) => {
-                
-                if (theme.id == punct.themeStatisticId) {
-                    arr.push(punct)
-                }
-
-               
-            })
-            arr.sort((a,b) => a.id-b.id);
-            theme.dataValues["punctsStatistic"] = arr;
-        })
-        statistic.dataValues["themesStatistic"] = themes;
 
         return res.json(statistic)
     }
