@@ -596,12 +596,13 @@ class ProgramController {
                         })
                         .then(theme => {
                             theme_el.puncts.forEach(async (punct_el, i) => {
-                        
+                                
                                 if (arr_of_titles[punct_el.lection_id]) {
                                     await mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', typeof punct_el.lection_src == 'string' ? punct_el.lection_src :  arr_of_titles[punct_el.lection_id])})
                                     .then(async function(result){
                                         var html = result.value; // The generated HTML
                     
+                                        
                                     
                                         punct = await Punct.create({
                                             title: punct_el.title, 
@@ -624,7 +625,7 @@ class ProgramController {
                                         themeId: theme.id, 
                                         video_src: punct_el.video_src, 
                                         lection_src: typeof punct_el.lection_src == 'string' ? punct_el.lection_src :  arr_of_titles[punct_el.lection_id], 
-                                        lection_html: ``, 
+                                        lection_html: punct_el.lection_html, 
                                         lection_title: punct_el.lection_title, 
                                         lection_id: punct_el.lection_id, 
                                         practical_work: punct_el.practical_work, 
@@ -659,7 +660,7 @@ class ProgramController {
                     })
                     .then(theme => {
                         theme_el.puncts.forEach(async (punct_el, i) => {
-                    
+                           
                             if (arr_of_titles[punct_el.lection_id]) {
                             await mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', typeof punct_el.lection_src == 'string' ? punct_el.lection_src :  arr_of_titles[punct_el.lection_id])})
                             .then(async function(result){
@@ -687,7 +688,7 @@ class ProgramController {
                                     themeId: theme.id, 
                                     video_src: punct_el.video_src, 
                                     lection_src: typeof punct_el.lection_src == 'string' ? punct_el.lection_src :  arr_of_titles[punct_el.lection_id], 
-                                    lection_html: ``, 
+                                    lection_html: punct_el.lection_html, 
                                     lection_title: punct_el.lection_title, 
                                     lection_id: punct_el.lection_id, 
                                     practical_work: punct_el.practical_work, 
