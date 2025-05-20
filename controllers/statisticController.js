@@ -96,9 +96,16 @@ class StatisticController {
         return res.json(statistic)
     }
 
-    async getStatistics(req, res) {
+    async getStatistics(req, res, next) {
         const {users_id, programs_id} = req.body;
+        
+        if (!users_id) {
+            return next(ApiError.internal('Нет id пользователя'))
+        }
 
+        if (!programs_id) {
+            return next(ApiError.internal('Нет id программы'))
+        }
         const statistic = await Statistic.findOne({
             where: {
                 [Op.and]: [{ users_id: users_id, programs_id: programs_id }]
@@ -106,52 +113,55 @@ class StatisticController {
         })
      
         let themes;
-        if (statistic) {
-            themes = await ThemeStatistic.findAll(
-                {
-                    where: {
-                        statisticId: statistic.id
-                    }
-                }
-            )
-            let arrOfThemeId = []
-
-            themes.forEach(async theme => {
-                
-                arrOfThemeId.push(theme.dataValues.id);
-            })
-            
-            let puncts = await PunctStatistic.findAll(
-                {
-                    where: {
-                        themeStatisticId: {
-                            [Op.or]: arrOfThemeId,
+      
+            if (statistic) {
+                themes = await ThemeStatistic.findAll(
+                    {
+                        where: {
+                            statisticId: statistic.id
                         }
-                        
                     }
-                }
-            )
-            
-            themes.forEach((theme, i) => {
-                let arr = [];
-                puncts.forEach((punct) => {
+                )
+                let arrOfThemeId = []
+    
+                themes.forEach(async theme => {
                     
-                    if (theme.id == punct.themeStatisticId) {
-                        arr.push(punct)
-                    }
-
-                
+                    arrOfThemeId.push(theme.dataValues.id);
                 })
-                arr.sort((a,b) => a.id-b.id);
-                theme.dataValues["punctsStatistic"] = arr;
-            })
-
-            themes.sort((a, b) => a.id - b.id);
-            statistic.dataValues["themesStatistic"] = themes;
-        }
+                
+                let puncts = await PunctStatistic.findAll(
+                    {
+                        where: {
+                            themeStatisticId: {
+                                [Op.or]: arrOfThemeId,
+                            }
+                            
+                        }
+                    }
+                )
+                
+                themes.forEach((theme, i) => {
+                    let arr = [];
+                    puncts.forEach((punct) => {
+                        
+                        if (theme.id == punct.themeStatisticId) {
+                            arr.push(punct)
+                        }
+    
+                    
+                    })
+                    arr.sort((a,b) => a.id-b.id);
+                    theme.dataValues["punctsStatistic"] = arr;
+                })
+    
+                themes.sort((a, b) => a.id - b.id);
+                statistic.dataValues["themesStatistic"] = themes;
+            }
+       
+        
         
       
-
+        console.log(statistic);
         
 
         return res.json(statistic)

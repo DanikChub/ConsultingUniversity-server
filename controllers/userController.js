@@ -16,21 +16,29 @@ const generateJwt = (id, email, role) => {
 class UserController {
     async registration(req, res, next) {
         const {email, password, role, name, number, organiztion, programs_id, diplom} = req.body
-        if (!email || !password) {
-            return next(ApiError.badRequest('Некорректный email или password'))
+        if (!email) {
+            return next(ApiError.badRequest('Некорректный email'))
+        }
+        if (!password) {
+            return next(ApiError.badRequest('Некорректный пароль'))
+        }
+        if (!number) {
+            return next(ApiError.badRequest('Некорректный номер'))
+        }
+       
+        if (!programs_id[0]) {
+            return next(ApiError.badRequest('Отсутствует программа у пользователя'))
         }
         const candidate = await User.findOne({where: {email}})
         if (candidate) {
             return next(ApiError.badRequest('Пользователь с таким email уже существует'))
         }
+        const candidate2 = await User.findOne({where: {number}})
+        if (candidate2) {
+            return next(ApiError.badRequest('Пользователь с таким телефоном уже существует'))
+        }
         const hashPassword = await bcrypt.hash(password, 5)
         const user = await User.create({email, role, password: hashPassword, name, number, organiztion, programs_id, diplom})
-
-
-
-
-
-
 
 
 
@@ -158,8 +166,27 @@ class UserController {
 
     async remakeUser(req, res, next) {
         const {id, email, password, role, name, number, organiztion, programs_id, diplom} = req.body
-        
         const user = await User.findOne({where: {id}})
+        if (!email) {
+            return next(ApiError.badRequest('Некорректный email'))
+        }
+       
+        if (!number) {
+            return next(ApiError.badRequest('Некорректный номер'))
+        }
+       
+        if (!programs_id[0]) {
+            return next(ApiError.badRequest('Отсутствует программа у пользователя'))
+        }
+        const candidate = await User.findOne({where: {email}})
+        if (candidate && candidate.id != user.id) {
+            return next(ApiError.badRequest('Пользователь с таким email уже существует'))
+        }
+        const candidate2 = await User.findOne({where: {number}})
+        if (candidate2  && candidate2.id != user.id) {
+            return next(ApiError.badRequest('Пользователь с таким телефоном уже существует'))
+        }
+        
     
         
         user.email = email;
@@ -174,8 +201,86 @@ class UserController {
         user.name = name;
         user.number = number;
         user.organiztion = organiztion;
+
+        if (user.programs_id[0] != programs_id[0]) {
+            let prevStat = await Statistic.destroy({
+                where: {
+                    [Op.and]: [{ users_id: id, programs_id: user.programs_id[0] }]
+                }
+            })
+            let program = await Program.findOne({where: {id: programs_id[0]}})
+
+            let statistic = await Statistic.create({
+                users_id: user.id, 
+                programs_id: program.id, 
+                max_videos: program.number_of_videos,
+                max_tests: program.number_of_test,
+                max_practical_works: program.number_of_practical_work
+            })
+    
+            const themes = await Theme.findAll(
+                {
+                    where: {
+                        programId: program.id
+                    }
+                }
+            )
+          
+    
+            let arrOfThemeId = []
+            let themesStatisticArray = []
+    
+            themes.forEach(async theme => {
+           
+                   
+                
+                arrOfThemeId.push(theme.id);
+            })
+       
+            
+            let puncts = await Punct.findAll(
+                {
+                    where: {
+                        themeId: {
+                            [Op.or]: arrOfThemeId,
+                        }
+                        
+                    }
+                }
+            )
+            
+            themes.forEach(async (theme, i) => {
+                let themeStatic = await ThemeStatistic.create({theme_id: theme.id,
+                    well: false, statisticId: statistic.id});
+           
+                puncts.forEach(async (punct) => {
+                    if (theme.id == punct.themeId) {
+                        let punctStatic = await PunctStatistic.create(
+                            {   punct_id: punct.id,
+                                lection: false,
+                                practical_work: null,
+                                video: false,
+                                test_bool: false,
+                                themeStatisticId: themeStatic.id
+                            })
+                    }
+                    
+                    
+    
+                   
+                })
+                
+            })
+        }
+        
+        
         user.programs_id = programs_id;
-        user.diplom = diplom
+        user.diplom = diplom;
+
+
+        
+
+       
         user.save();
    
         return res.json({user})

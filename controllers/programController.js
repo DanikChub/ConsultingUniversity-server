@@ -1,4 +1,4 @@
-const { Program, Theme, Punct, Test } = require("../models/models");
+const { Program, Theme, Punct, Test, User, Statistic, ThemeStatistic, PunctStatistic } = require("../models/models");
 const ApiError = require('../error/ApiError')
 const { Op } = require('sequelize');
 const uuid = require('uuid')
@@ -9,12 +9,41 @@ const mammoth = require('mammoth');
 
 
 class ProgramController {
-    async create(req, res) {
+    async create(req, res, next) {
         const {title, admin_id, number_of_practical_work, number_of_test, number_of_videos, themes} = req.body;
         const files = req.files
   
      
         const parsedThemes = JSON.parse(themes);
+        if (!title) {
+            return next(ApiError.internal( `Программа не имеет названия!`))
+        }
+        parsedThemes.forEach(theme_el => {
+            if (!theme_el.title) {
+                return next(ApiError.internal( `Тема "${theme_el.theme_id + 1}" не имеет названия!`))
+            }
+            let bool = [];
+            theme_el.puncts.forEach(punct_el => {
+                if (punct_el.test_id) {
+                    bool.push(true);
+                }
+                
+                if (!punct_el.lection_title && !punct_el.video_src && !punct_el.test_id) {
+                    return next(ApiError.internal( `Пункт "${punct_el.punct_id + 1}" не может быть пустым`))
+                }
+
+                if (!punct_el.title) {
+                    return next(ApiError.internal( `Пункт "${punct_el.punct_id + 1}" не имеет названия!`))
+                }
+            })
+            
+            if (bool.length == 0) {
+                return next(ApiError.internal( `В теме "${theme_el.title}" нет теста! (В каждой теме должен быть один тест для подсчета статистики!)`))
+            }
+            if (bool.length > 1) {
+                return next(ApiError.internal( `В теме "${theme_el.title}" ${bool.length} тестов! (В каждой теме может быть только один тест для правильного подсчета статистики!)`))
+            }
+        })
      
         let arr_of_titles = [];
     
@@ -58,7 +87,7 @@ class ProgramController {
                 }
             }
         } catch (e) {
-
+            return next(ApiError.internal( 'Ошибка при сохранении файлов лекций пунктов'))
         }
 
         let presentationNames = [];
@@ -87,7 +116,7 @@ class ProgramController {
                     
             }
         } catch (e) {
-
+            return next(ApiError.internal( 'Ошибка при сохранении файлов презентаций'))
         }
         
         
@@ -117,7 +146,8 @@ class ProgramController {
                     
             }
         } catch (e) {
-
+            
+            return next(ApiError.internal( 'Ошибка при сохранении файлов лекций тем'))
         }
         
      
@@ -129,58 +159,76 @@ class ProgramController {
         parsedThemes.forEach( async (theme_el)  =>  {
             
             if (theme_arr_of_titles[theme_el.lection_id]) {
-                mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', theme_arr_of_titles[theme_el.lection_id])})
-                .then(async function(result){
-                    var html = result.value;
+                try {
+                    mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', theme_arr_of_titles[theme_el.lection_id])})
+                    .then(async function(result){
+                        var html = result.value;
+                        try {
+                            await Theme.create({
+                                title: theme_el.title, 
+                                programId: program.id, 
+                                theme_id: theme_el.theme_id,
+                                presentation_src: presentationNames[theme_el.presentation_id], 
+                                presentation_title: theme_el.presentation_title, 
+                                video_src: theme_el.video_src,
+                                lection_src: theme_arr_of_titles[theme_el.lection_id], 
+                                lection_html: html, 
+                                lection_title: theme_el.lection_title, 
+                                lection_id: theme_el.lection_id
+                            })
+                            .then(theme => {
+                                try {
+                                    theme_el.puncts.forEach(async (punct_el, i) => {
+                                    
+                                        if (arr_of_titles[punct_el.lection_id]) {
+                                            mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', arr_of_titles[punct_el.lection_id])})
+                                            .then(async function(result){
+                                                var html = result.value; // The generated HTML
+                                                punct = await Punct.create({
+                                                    title: punct_el.title, 
+                                                    themeId: theme.id, 
+                                                    video_src: punct_el.video_src, 
+                                                    lection_src: arr_of_titles[punct_el.lection_id], 
+                                                    lection_html: html, 
+                                                    lection_title: punct_el.lection_title, 
+                                                    lection_id: punct_el.lection_id, 
+                                                    practical_work: punct_el.practical_work, 
+                                                    test_id: punct_el.test_id,
+                                                    punct_id: punct_el.punct_id
+                                                })
+                                                
+                                            })
+                                            .done();
+                                        } else {
+                                            punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], lection_html: ``, lection_title: punct_el.lection_title, lection_id: punct_el.lection_id, practical_work: punct_el.practical_work, test_id: punct_el.test_id,
+                                            punct_id: punct_el.punct_id
+                                            })
+                                        }
+                                        
+                                    })
+                                } catch(e) {
+                                    return next(ApiError.internal( 'Ошибка сохранении пунктов'))
+                                }
+                                
+        
+        
+        
+                            })
+                        } catch(e) {
+                            return next(ApiError.internal( 'Ошибка сохранении тем'))
+                        }
+                        
+                    })
+                } catch(e) {
+                    return next(ApiError.internal( 'Ошибка при конвертировании docx файлов в html'))
+                }
+                
+            } else {
+                try {
                     await Theme.create({
                         title: theme_el.title, 
                         programId: program.id, 
-                        presentation_src: presentationNames[theme_el.presentation_id], 
-                        presentation_title: theme_el.presentation_title, 
-                        video_src: theme_el.video_src,
-                        lection_src: theme_arr_of_titles[theme_el.lection_id], 
-                        lection_html: html, 
-                        lection_title: theme_el.lection_title, 
-                        lection_id: theme_el.lection_id
-                    })
-                    .then(theme => {
-                        theme_el.puncts.forEach(async (punct_el, i) => {
-                            
-                            if (arr_of_titles[punct_el.lection_id]) {
-                                mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', arr_of_titles[punct_el.lection_id])})
-                                .then(async function(result){
-                                    var html = result.value; // The generated HTML
-                                    punct = await Punct.create({
-                                        title: punct_el.title, 
-                                        themeId: theme.id, 
-                                        video_src: punct_el.video_src, 
-                                        lection_src: arr_of_titles[punct_el.lection_id], 
-                                        lection_html: html, 
-                                        lection_title: punct_el.lection_title, 
-                                        lection_id: punct_el.lection_id, 
-                                        practical_work: punct_el.practical_work, 
-                                        test_id: punct_el.test_id,
-                                        punct_id: punct_el.punct_id
-                                    })
-                                    
-                                })
-                                .done();
-                            } else {
-                                punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], lection_html: ``, lection_title: punct_el.lection_title, lection_id: punct_el.lection_id, practical_work: punct_el.practical_work, test_id: punct_el.test_id,
-                                punct_id: punct_el.punct_id
-                                })
-                            }
-                            
-                        })
-
-
-
-                    })
-                })
-            } else {
-                await Theme.create({
-                        title: theme_el.title, 
-                        programId: program.id, 
+                        theme_id: theme_el.theme_id,
                         presentation_src: presentationNames[theme_el.presentation_id], 
                         presentation_title: theme_el.presentation_title, 
                         video_src: theme_el.video_src,
@@ -190,38 +238,47 @@ class ProgramController {
                         lection_id: theme_el.lection_id
                     })
                     .then(theme => {
-                        theme_el.puncts.forEach(async (punct_el, i) => {
+                        try {
+                            theme_el.puncts.forEach(async (punct_el, i) => {
                             
-                            if (arr_of_titles[punct_el.lection_id]) {
-                                mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', arr_of_titles[punct_el.lection_id])})
-                                .then(async function(result){
-                                    var html = result.value; // The generated HTML
-                                    punct = await Punct.create({
-                                        title: punct_el.title, 
-                                        themeId: theme.id, 
-                                        video_src: punct_el.video_src, 
-                                        lection_src: arr_of_titles[punct_el.lection_id], 
-                                        lection_html: html, 
-                                        lection_title: punct_el.lection_title, 
-                                        lection_id: punct_el.lection_id, 
-                                        practical_work: punct_el.practical_work, 
-                                        test_id: punct_el.test_id,
-                                        punct_id: punct_el.punct_id
+                                if (arr_of_titles[punct_el.lection_id]) {
+                                    mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', arr_of_titles[punct_el.lection_id])})
+                                    .then(async function(result){
+                                        var html = result.value; // The generated HTML
+                                        punct = await Punct.create({
+                                            title: punct_el.title, 
+                                            themeId: theme.id, 
+                                            video_src: punct_el.video_src, 
+                                            lection_src: arr_of_titles[punct_el.lection_id], 
+                                            lection_html: html, 
+                                            lection_title: punct_el.lection_title, 
+                                            lection_id: punct_el.lection_id, 
+                                            practical_work: punct_el.practical_work, 
+                                            test_id: punct_el.test_id,
+                                            punct_id: punct_el.punct_id
+                                        })
+                                        
                                     })
-                                    
-                                })
-                                .done();
-                            } else {
-                                punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], lection_html: ``, lection_title: punct_el.lection_title, lection_id: punct_el.lection_id, practical_work: punct_el.practical_work, test_id: punct_el.test_id,
-                                punct_id: punct_el.punct_id
-                                })
-                            }
-                            
-                        })
+                                    .done();
+                                } else {
+                                    punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], lection_html: ``, lection_title: punct_el.lection_title, lection_id: punct_el.lection_id, practical_work: punct_el.practical_work, test_id: punct_el.test_id,
+                                    punct_id: punct_el.punct_id
+                                    })
+                                }
+                                
+                            })
+                        } catch(e) {
+                            return next(ApiError.internal( 'Ошибка сохранении пунктов'))
+                        }
+                        
 
 
                         
                     })
+                } catch(e) {
+                    return next(ApiError.internal( 'Ошибка сохранении тем'))
+                }
+                
             }
         
             
@@ -239,21 +296,28 @@ class ProgramController {
         return res.json(programs);
     }
 
-    async getOnePunct(req, res) {
+    async getOnePunct(req, res, next) {
         const {id} = req.params
+        
         const punct = await Punct.findOne({where: {id}})
+        if (!punct) {
+            return next(ApiError.internal( 'Пункт не найден'))
+        }
 
         return res.json(punct)
     }
 
-    async getOneTheme(req, res) {
+    async getOneTheme(req, res, next) {
         const {id} = req.params
         const theme = await Theme.findOne({where: {id}})
+        if (!theme) {
+            return next(ApiError.internal( 'Тема не найдена'))
+        }
 
         return res.json(theme)
     }
 
-    async getOne(req, res) {
+    async getOne(req, res, next) {
         const {id} = req.params
         const program = await Program.findOne(
             {
@@ -304,23 +368,38 @@ class ProgramController {
             theme.dataValues["puncts"] = arr;
         })
         
-        themes.sort((a, b) => a.createdAt - b.createdAt)
+        themes.sort((a, b) => a.theme_id - b.theme_id)
        
         program.dataValues["themes"] = themes;
     
         return res.json(program)
     }
 
-    async deleteProgram(req, res) {
+    async deleteProgram(req, res, next) {
         const {id} = req.body;
         const program = await Program.findOne({
             where: {
               id: id,
             },
           })
-        
+        if (!program) {
+            return next(ApiError.internal( 'Программа для удаления не найдена'))
+        }
+
+        const users = await User.findAll({where: {
+            programs_id: [program.id]
+        }})
+       
+        if (users[0]) {
+
+            return next(ApiError.internal(`Программу уже проходят ${users.length} пользователей и ее удаление невозможно!`))
+        }
           
         let themes = await Theme.findAll({where: {programId: program.id}})
+
+        if (!themes) {
+            return next(ApiError.internal( 'Темы для удаления не найдены'))
+        }
       
         themes.forEach(async (theme) => {
             if (theme.presetation_src) {
@@ -332,17 +411,23 @@ class ProgramController {
                 }); 
             }
             let puncts = await Punct.findAll({where: {themeId: theme.id}})
-            
+            if (!puncts) {
+                return next(ApiError.internal( 'Пункты для удаления не найдены'))
+            }
             puncts.forEach(async (punct) => {
-              
-                if (punct.lection_src) {
+                try {
+                    if (punct.lection_src) {
                     
-                    fs.unlink(path.resolve(__dirname, '..', 'static', punct.lection_src), (err) => {
-                        if (err) throw err;
-
-                      
-                    }); 
+                        fs.unlink(path.resolve(__dirname, '..', 'static', punct.lection_src), (err) => {
+                            if (err) throw err;
+    
+                          
+                        }); 
+                    } 
+                } catch(e) {
+                    return next(ApiError.internal( 'Ошибка при удалении файлов с сервера'))
                 }
+                
                 
             })
             
@@ -359,8 +444,9 @@ class ProgramController {
         return res.json(program);
     }
 
-    async remake(req, res) {
+    async remake(req, res, next) {
         const {title, number_of_practical_work, number_of_test, number_of_videos, themes, id} = req.body;
+        
         const files = req.files
   
      
@@ -450,6 +536,11 @@ class ProgramController {
         
      
         const program = await Program.findOne({where: {id}})
+
+        if (number_of_test < program.number_of_test) {
+            return next(ApiError.internal( 'Нельзя удалять тесты при изменении программы'))
+        }
+
         program.title = title;
         program.number_of_practical_work = number_of_practical_work;
         program.number_of_test = number_of_test;
@@ -459,39 +550,117 @@ class ProgramController {
         let punct;
         theme = await Theme.destroy({where: {programId: program.id}})
         
+        const statistics = await Statistic.findAll({where: {programs_id: program.id}})
 
+        statistics.forEach( async statistic => {
+            for (let i = 0; i < number_of_test-statistic.max_tests; i++) {
+                const themeStatistic = await ThemeStatistic.create({
+                    theme_id: i,
+                    well: false, 
+                    statisticId: statistic.id
+                })
+                const punctStatistic = await PunctStatistic.create({   
+                    punct_id: i,
+                    lection: false,
+                    practical_work: null,
+                    video: false,
+                    test_bool: false,
+                    themeStatisticId: themeStatistic.id
+                })
+            }
+            statistic.max_videos = number_of_videos;
+            statistic.max_tests = number_of_test;
+            statistic.max_practical_works = number_of_practical_work;
+            
+            statistic.save();
+        })
 
-
+    
         parsedThemes.forEach( async (theme_el)  =>  {
 
-            // title: theme_el.title, 
-            // programId: program.id, 
-            // presentation_src: presentationNames[theme_el.presentation_id], 
-            // presentation_title: theme_el.presentation_title, 
-            // video_src: theme_el.video_src,
-            // lection_src: theme_arr_of_titles[theme_el.lection_id], 
-            // lection_html: ``, 
-            // lection_title: theme_el.lection_title, 
-            // lection_id: theme_el.lection_id
-           
-                mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', typeof theme_el.lection_src == 'string' ? theme_el.lection_src :  theme_arr_of_titles[theme_el.lection_id])})
-                .then(async function(result){
-                    var html = result.value;
+                if (theme_el.lection_src) {
+                    mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', typeof theme_el.lection_src == 'string' ? theme_el.lection_src :  theme_arr_of_titles[theme_el.lection_id])})
+                    .then(async function(result){
+                        var html = result.value;
+                        await Theme.create({
+                            title: theme_el.title, 
+                            programId: program.id, 
+                            theme_id: theme_el.theme_id,
+                            presentation_src: presentationNames[theme_el.presentation_id],
+                            presentation_title: theme_el.presentation_title, 
+                            video_src: theme_el.video_src,
+                            lection_src: typeof theme_el.lection_src == 'string' ? theme_el.lection_src : theme_arr_of_titles[theme_el.lection_id], 
+                            lection_html: html, 
+                            lection_title: theme_el.lection_title, 
+                            lection_id: theme_el.lection_id
+                        })
+                        .then(theme => {
+                            theme_el.puncts.forEach(async (punct_el, i) => {
+                        
+                                if (arr_of_titles[punct_el.lection_id]) {
+                                    await mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', typeof punct_el.lection_src == 'string' ? punct_el.lection_src :  arr_of_titles[punct_el.lection_id])})
+                                    .then(async function(result){
+                                        var html = result.value; // The generated HTML
+                    
+                                    
+                                        punct = await Punct.create({
+                                            title: punct_el.title, 
+                                            themeId: theme.id, 
+                                            video_src: punct_el.video_src, 
+                                            lection_src: typeof punct_el.lection_src == 'string' ? punct_el.lection_src :  arr_of_titles[punct_el.lection_id], 
+                                            lection_html: html, 
+                                            lection_title: punct_el.lection_title, 
+                                            lection_id: punct_el.lection_id, 
+                                            practical_work: punct_el.practical_work, 
+                                            test_id: punct_el.test_id,
+                                            punct_id: punct_el.punct_id
+                                        })
+                                    
+                                    })
+                                    .done();
+                                } else {
+                                    punct = await Punct.create({
+                                        title: punct_el.title, 
+                                        themeId: theme.id, 
+                                        video_src: punct_el.video_src, 
+                                        lection_src: typeof punct_el.lection_src == 'string' ? punct_el.lection_src :  arr_of_titles[punct_el.lection_id], 
+                                        lection_html: ``, 
+                                        lection_title: punct_el.lection_title, 
+                                        lection_id: punct_el.lection_id, 
+                                        practical_work: punct_el.practical_work, 
+                                        test_id: punct_el.test_id,
+                                        punct_id: punct_el.punct_id
+                                    })
+                                }
+                               
+                                
+                                
+                            
+                
+                            })
+                            theme_el.puncts.forEach(async (punct_el, i) => {
+                                punct = await Punct.destroy({where: {themeId: theme.id}})
+                            })
+                        })
+                    })
+                } else {
+                    
                     await Theme.create({
                         title: theme_el.title, 
                         programId: program.id, 
+                        theme_id: theme_el.theme_id,
                         presentation_src: presentationNames[theme_el.presentation_id],
                         presentation_title: theme_el.presentation_title, 
                         video_src: theme_el.video_src,
-                        lection_src: typeof theme_el.lection_src == 'string' ? theme_el.lection_src : theme_arr_of_titles[theme_el.lection_id], 
-                        lection_html: html, 
-                        lection_title: theme_el.lection_title, 
+                        lection_src: ``, 
+                        lection_html: ``, 
+                        lection_title: ``, 
                         lection_id: theme_el.lection_id
                     })
                     .then(theme => {
                         theme_el.puncts.forEach(async (punct_el, i) => {
                     
-
+                            if (arr_of_titles[punct_el.lection_id]) {
                             await mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', typeof punct_el.lection_src == 'string' ? punct_el.lection_src :  arr_of_titles[punct_el.lection_id])})
                             .then(async function(result){
                                 var html = result.value; // The generated HTML
@@ -512,7 +681,20 @@ class ProgramController {
                             
                             })
                             .done();
-                            
+                            } else {
+                                punct = await Punct.create({
+                                    title: punct_el.title, 
+                                    themeId: theme.id, 
+                                    video_src: punct_el.video_src, 
+                                    lection_src: typeof punct_el.lection_src == 'string' ? punct_el.lection_src :  arr_of_titles[punct_el.lection_id], 
+                                    lection_html: ``, 
+                                    lection_title: punct_el.lection_title, 
+                                    lection_id: punct_el.lection_id, 
+                                    practical_work: punct_el.practical_work, 
+                                    test_id: punct_el.test_id,
+                                    punct_id: punct_el.punct_id
+                                })
+                            }
                             
                         
             
@@ -521,13 +703,18 @@ class ProgramController {
                             punct = await Punct.destroy({where: {themeId: theme.id}})
                         })
                     })
-                })
+                    
+                }
+           
+               
             
             
             
         })
 
         program.save();
+        
+
         
 
         
