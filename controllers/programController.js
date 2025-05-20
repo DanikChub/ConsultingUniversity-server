@@ -577,7 +577,7 @@ class ProgramController {
 
     
         parsedThemes.forEach( async (theme_el)  =>  {
-
+                console.log("############################", presentationNames[theme_el.presentation_id], theme_el.presentation_id, "############################");
                 if (theme_el.lection_src) {
                     mammoth.convertToHtml({path: path.resolve(__dirname, '..', 'static', typeof theme_el.lection_src == 'string' ? theme_el.lection_src :  theme_arr_of_titles[theme_el.lection_id])})
                     .then(async function(result){
@@ -586,8 +586,9 @@ class ProgramController {
                             title: theme_el.title, 
                             programId: program.id, 
                             theme_id: theme_el.theme_id,
-                            presentation_src: presentationNames[theme_el.presentation_id],
+                            presentation_src: theme_el.presentation_src ? theme_el.presentation_src : presentationNames[theme_el.presentation_id] ,
                             presentation_title: theme_el.presentation_title, 
+                            presentation_id: theme_el.presentation_id,
                             video_src: theme_el.video_src,
                             lection_src: typeof theme_el.lection_src == 'string' ? theme_el.lection_src : theme_arr_of_titles[theme_el.lection_id], 
                             lection_html: html, 
@@ -650,8 +651,9 @@ class ProgramController {
                         title: theme_el.title, 
                         programId: program.id, 
                         theme_id: theme_el.theme_id,
-                        presentation_src: presentationNames[theme_el.presentation_id],
+                        presentation_src: typeof theme_el.presentation_src == 'string' ? theme_el.presentation_src : presentationNames[theme_el.presentation_id] ,
                         presentation_title: theme_el.presentation_title, 
+                        presentation_id: theme_el.presentation_id,
                         video_src: theme_el.video_src,
                         lection_src: ``, 
                         lection_html: ``, 

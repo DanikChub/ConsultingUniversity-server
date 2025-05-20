@@ -161,7 +161,7 @@ class StatisticController {
         
         
       
-        console.log(statistic);
+       
         
 
         return res.json(statistic)

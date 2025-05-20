@@ -58,6 +58,7 @@ const Theme = sequelize.define('theme', {
     theme_id: {type: DataTypes.INTEGER},
     presentation_src: {type: DataTypes.STRING},
     presentation_title: {type: DataTypes.STRING},
+    presentation_id: {type: DataTypes.INTEGER},
     lection_src: {type: DataTypes.STRING},
     lection_title: {type: DataTypes.STRING},
     lection_id: {type: DataTypes.STRING},
