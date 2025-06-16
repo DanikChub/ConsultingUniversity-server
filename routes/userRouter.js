@@ -17,6 +17,8 @@ router.post('/check_forgot_password', userController.checkForgotPassword)
 router.get('/auth', authMiddleware, userController.check)
 router.get('/getUser/:id', userController.getUserById)
 router.get('/getUser/', checkRole('ADMIN'), userController.getAllUsers)
+router.get('/getAllUser/:page', checkRole('ADMIN'), userController.getAllUsersWithPage)
+router.get('/search/:page', checkRole('ADMIN'), userController.searchUsers)
 router.post('/setGraduationDate/', userController.setGraduationDate)
 
 module.exports = router;

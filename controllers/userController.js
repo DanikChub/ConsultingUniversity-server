@@ -2,7 +2,7 @@ const ApiError = require('../error/ApiError');
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const {User, Statistic, Program, Theme, Punct, ThemeStatistic, PunctStatistic} = require('../models/models')
-const { Op } = require('sequelize');
+const { Op, fn } = require('sequelize');
 const nodemailer = require('nodemailer');
 
 const generateJwt = (id, email, role) => {
@@ -15,7 +15,7 @@ const generateJwt = (id, email, role) => {
 
 class UserController {
     async registration(req, res, next) {
-        const {email, password, role, name, number, organiztion, programs_id, diplom} = req.body
+        const {email, password, role, name, number, organiztion, programs_id, diplom, inn, address} = req.body
         if (!email) {
             return next(ApiError.badRequest('Некорректный email'))
         }
@@ -38,7 +38,8 @@ class UserController {
             return next(ApiError.badRequest('Пользователь с таким телефоном уже существует'))
         }
         const hashPassword = await bcrypt.hash(password, 5)
-        const user = await User.create({email, role, password: hashPassword, name, number, organiztion, programs_id, diplom})
+       
+        const user = await User.create({email, role, password: hashPassword, name, number, organiztion, programs_id, diplom, inn, address})
 
 
 
@@ -165,7 +166,7 @@ class UserController {
     }
 
     async remakeUser(req, res, next) {
-        const {id, email, password, role, name, number, organiztion, programs_id, diplom} = req.body
+        const {id, email, password, role, name, number, organiztion, programs_id, diplom, inn, address} = req.body
         const user = await User.findOne({where: {id}})
         if (!email) {
             return next(ApiError.badRequest('Некорректный email'))
@@ -201,6 +202,8 @@ class UserController {
         user.name = name;
         user.number = number;
         user.organiztion = organiztion;
+        user.inn = inn;
+        user.address = address;
 
         if (user.programs_id[0] != programs_id[0]) {
             let prevStat = await Statistic.destroy({
@@ -383,10 +386,104 @@ class UserController {
 
     async getAllUsers(req, res, next) {
        
-        const users = await User.findAll()
+        
+        let users = await User.findAll({
+            where: {role: 'USER'}
+        })
+        
        
         return res.json(users);
     }
+
+    async getAllUsersWithPage(req, res, next) {
+        const {page} = req.params; 
+        const {sort_type, sort_down} = req.query;
+
+        let usersFirst = await User.findAll({
+            where: {role: 'USER'},
+        })
+        
+        async function makeUsers() {
+            
+
+            for (const user of usersFirst) {
+                if (user.role != 'ADMIN') {
+                    const statistic = await Statistic.findOne({where: {[Op.and]: [{ users_id: user.id, programs_id: user.programs_id[0] }]}})
+               
+                    user.statistic = Math.round((statistic.well_tests)/(statistic.max_tests)*100);
+                    user.save();
+                }
+                
+            }
+                
+            
+        }
+
+        await makeUsers();
+
+        let users = await User.findAndCountAll({
+            offset:((page-1)*10),
+            limit : 10,
+            where: {role: 'USER'},
+            order: [
+                [sort_type, sort_down],
+              
+              ]
+        })
+     
+
+
+       
+        return res.json(users);
+    }
+
+    async searchUsers(req, res, next) {
+        const {page} = req.params;
+        const {q} = req.query;
+
+
+
+
+        let users = await User.findAndCountAll({
+            offset:((page-1)*10),
+            limit : 10,
+            where: {
+                role: 'USER',
+                [Op.or]: [
+                    {name: { [Op.regexp]: `${q}` }},
+                    {organiztion: { [Op.regexp]: `${q}` }}
+                ]
+                
+            }
+
+        })
+
+      
+        async function makeUsers() {
+            let practic_copy = users.rows;
+
+            for (const user of practic_copy) {
+                if (user.role != 'ADMIN') {
+                    const statistic = await Statistic.findOne({where: {[Op.and]: [{ users_id: user.id, programs_id: user.programs_id[0] }]}})
+               
+                    user.dataValues["statistic"] = Math.round((statistic.well_tests)/(statistic.max_tests)*100);
+                }
+                
+            }
+            
+
+            users.rows = practic_copy;
+
+            return  users;
+                
+            
+        }
+
+        let res_users = await makeUsers()
+        
+        return res.json(res_users);
+    }
+
 
     async deleteUser(req, res) {
         const {id} = req.body;

@@ -10,8 +10,10 @@ const User = sequelize.define('user', {
     role: {type: DataTypes.STRING, defaultValue: "USER"},
     programs_id: {type: DataTypes.ARRAY(DataTypes.INTEGER), allowNull: false},
     diplom: {type: DataTypes.BOOLEAN},
+    address: {type: DataTypes.STRING},
     organiztion: {type: DataTypes.STRING},
     inn: {type: DataTypes.STRING},
+    statistic: {type: DataTypes.INTEGER},
     
     graduation_date: {type: DataTypes.DATE},
 
@@ -134,9 +136,14 @@ const PunctStatistic = sequelize.define('punct_statistic', {
 const PracticalWork = sequelize.define('practical_work', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
     task: {type: DataTypes.STRING},
+    practic_title: {type: DataTypes.STRING},
+    test: {type: DataTypes.BOOLEAN},
     file_src: {type: DataTypes.STRING},
     answer: {type: DataTypes.STRING},
-    users_id: {type: DataTypes.INTEGER}
+    users_id: {type: DataTypes.INTEGER},
+    program_id: {type: DataTypes.INTEGER},
+    theme_id: {type: DataTypes.INTEGER},
+    punct_id: {type: DataTypes.INTEGER}
 })
 
 

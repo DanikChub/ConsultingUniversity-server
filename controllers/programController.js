@@ -20,7 +20,7 @@ class ProgramController {
         }
         parsedThemes.forEach(theme_el => {
             if (!theme_el.title) {
-                return next(ApiError.internal( `Тема "${theme_el.theme_id + 1}" не имеет названия!`))
+                return next(ApiError.internal( `Модуль "${theme_el.theme_id + 1}" не имеет названия!`))
             }
             let bool = [];
             theme_el.puncts.forEach(punct_el => {
@@ -28,7 +28,7 @@ class ProgramController {
                     bool.push(true);
                 }
                 
-                if (!punct_el.lection_title && !punct_el.video_src && !punct_el.test_id) {
+                if (!punct_el.lection_title && !punct_el.video_src && !punct_el.test_id && !punct_el.practical_work) {
                     return next(ApiError.internal( `Пункт "${punct_el.punct_id + 1}" не может быть пустым`))
                 }
 
@@ -268,7 +268,7 @@ class ProgramController {
                                 
                             })
                         } catch(e) {
-                            return next(ApiError.internal( 'Ошибка сохранении пунктов'))
+                            return next(ApiError.internal( 'Ошибка при сохранении пунктов'))
                         }
                         
 

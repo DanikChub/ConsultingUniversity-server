@@ -68,15 +68,9 @@ class StatisticController {
     }
 
     async updatePracticalWorks(req, res) {
-        const {users_id, programs_id, punct_id} = req.body;
+        const {users_id, programs_id} = req.body;
 
         
-        
-        let punctStatic = await PunctStatistic.findOne({
-            where: {
-                id: punct_id
-            }
-        })
         
    
         const statistic = await Statistic.findOne({
@@ -84,14 +78,13 @@ class StatisticController {
                 [Op.and]: [{ users_id: users_id, programs_id: programs_id }]
             }
         })
-        if (statistic.well_practical_works < statistic.max_practical_works && !punctStatic.lection) {
+        if (statistic.well_tests < statistic.max_tests) {
+            statistic.well_tests += 1;
             
-            statistic.well_practical_works += 1;
-            punctStatic.lection = true;
         }
         
         statistic.save();
-        punctStatic.save();
+      
 
         return res.json(statistic)
     }
