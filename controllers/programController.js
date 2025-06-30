@@ -415,17 +415,16 @@ class ProgramController {
         if (!themes) {
             return next(ApiError.internal( 'Темы для удаления не найдены'))
         }
-        try {
+        
         themes.forEach(async (theme) => {
-            if (theme.presetation_src) {
-                if (fs.existsSync(__dirname, '..', 'static', theme.presetation_src)) {
-                    fs.unlink(path.resolve(__dirname, '..', 'static', theme.presetation_src), (err) => {
-                        if (err) throw err;
-    
+            try {
+                if (theme.presetation_src) {
+                    if (fs.existsSync(__dirname, '..', 'static', theme.presetation_src)) {
                         
-                    }); 
+                    }
                 }
-                
+            } catch(e) {
+                return next(ApiError.internal( 'Ошибка при удалении файлов с сервера'))
             }
             let puncts = await Punct.findAll({where: {themeId: theme.id}})
             if (!puncts) {
@@ -435,11 +434,7 @@ class ProgramController {
                 try {
                     if (punct.lection_src) {
                         if (fs.existsSync(__dirname, '..', 'static', theme.lection_src)) {
-                            fs.unlink(path.resolve(__dirname, '..', 'static', punct.lection_src), (err) => {
-                                if (err) throw err;
-        
                             
-                            }); 
                         }
                     } 
                 } catch(e) {
@@ -453,9 +448,7 @@ class ProgramController {
          
             
         })
-        } catch(e) {
-            return next(ApiError.badRequest( 'Файлы для удаления не были найдены'))
-        }
+        
         await Program.destroy({
             where: {
               id: id,
