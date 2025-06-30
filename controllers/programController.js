@@ -26,9 +26,13 @@ class ProgramController {
                 return next(ApiError.internal( `Модуль "${theme_el.theme_id + 1}" не имеет названия!`))
              
             }
+            
             let bool = [];
             theme_el.puncts.forEach(punct_el => {
                 if (punct_el.test_id) {
+                    bool.push(true);
+                }
+                if (punct_el.practical_work) {
                     bool.push(true);
                 }
                 
@@ -481,6 +485,9 @@ class ProgramController {
             let bool = [];
             theme_el.puncts.forEach(punct_el => {
                 if (punct_el.test_id) {
+                    bool.push(true);
+                }
+                if (punct_el.practical_work) {
                     bool.push(true);
                 }
                 
