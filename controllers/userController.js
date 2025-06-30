@@ -113,6 +113,37 @@ class UserController {
         return res.json({token})
     }
 
+    async registrationAdmin(req, res, next) {
+        const {email, password, role, name, number, organiztion, programs_id, diplom, inn, address} = req.body
+        if (!email) {
+            return next(ApiError.badRequest('Некорректный email'))
+        }
+        if (!password) {
+            return next(ApiError.badRequest('Некорректный пароль'))
+        }
+        if (!number) {
+            return next(ApiError.badRequest('Некорректный номер'))
+        }
+       
+        const candidate = await User.findOne({where: {email}})
+        if (candidate) {
+            return next(ApiError.badRequest('Пользователь с таким email уже существует'))
+        }
+        const candidate2 = await User.findOne({where: {number}})
+        if (candidate2) {
+            return next(ApiError.badRequest('Пользователь с таким телефоном уже существует'))
+        }
+        const hashPassword = await bcrypt.hash(password, 5)
+       
+        const user = await User.create({email, role, password: hashPassword, name, number, organiztion, programs_id: programs_id || [-1], diplom, inn, address})
+
+
+        
+
+        const token = generateJwt(user.id, user.email, user.role)
+        return res.json({token})
+    }
+
     async setGraduationDate(req, res, next) {
         const {id, graduation_date} = req.body
 
@@ -252,11 +283,11 @@ class UserController {
                 }
             )
             
-            themes.forEach(async (theme, i) => {
+            for (const theme of themes) {
                 let themeStatic = await ThemeStatistic.create({theme_id: theme.id,
                     well: false, statisticId: statistic.id});
-           
-                puncts.forEach(async (punct) => {
+                
+                for (const punct of puncts) {
                     if (theme.id == punct.themeId) {
                         let punctStatic = await PunctStatistic.create(
                             {   punct_id: punct.id,
@@ -267,13 +298,11 @@ class UserController {
                                 themeStatisticId: themeStatic.id
                             })
                     }
-                    
-                    
-    
-                   
-                })
+                }
                 
-            })
+                
+            }
+           
         }
         
         
@@ -282,6 +311,36 @@ class UserController {
 
 
         
+
+       
+        user.save();
+   
+        return res.json({user})
+    }
+
+    async remakeAdmin(req, res, next) {
+        const {id, email, password, name, number} = req.body
+        const user = await User.findOne({where: {id}})
+        if (!email) {
+            return next(ApiError.badRequest('Некорректный email'))
+        }
+       
+        if (!number) {
+            return next(ApiError.badRequest('Некорректный номер'))
+        }
+       
+        
+        user.email = email;
+
+        
+    
+        if (password) {
+            const hashPassword = await bcrypt.hash(password, 5)
+            user.password = hashPassword;
+        } 
+        user.name = name;
+        user.number = number;
+       
 
        
         user.save();
@@ -389,6 +448,32 @@ class UserController {
         
         let users = await User.findAll({
             where: {role: 'USER'}
+        })
+        
+       
+        return res.json(users);
+    }
+    async getAllUsersGraduation(req, res, next) {
+       
+        
+        let users = await User.findAll({
+            where: {
+                role: 'USER',
+                graduation_date: {
+                    [Op.not]: null, // Like: sellDate IS NOT NULL
+                },
+            }
+        })
+        
+       
+        return res.json(users);
+    }
+
+    async getAllAdmins(req, res, next) {
+       
+        
+        let users = await User.findAll({
+            where: {role: 'ADMIN'}
         })
         
        

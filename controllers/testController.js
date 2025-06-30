@@ -7,17 +7,31 @@ const fs =  require('fs');
 const { time } = require("console");
 
 class TestController {
-    async create(req, res) {
+    async create(req, res, next) {
         const {title, puncts, time_limit} = req.body;
 
     
         const testCreate = await Test.create({id: Math.floor(Math.random()*9000000) + 1000000, title: title, time_limit: time_limit})
-    
-      
-        puncts.forEach( async (punct) => {
+        
+        if (!title) {
+            return next(ApiError.internal('Заполните название теста!'))
+        }
+        
+        for (const punct of puncts) {
+            if (!punct.question) {
+                return next(ApiError.internal('Заполните все вопросы в пунктах!'))
+            }
+            
+            if (punct.correct_answer.length == 0) {
+                return next(ApiError.internal('Заполните правильные ответы!'))
+            }
             let punctCreate = await TestPunct.create({question: punct.question, answers: punct.answers, correct_answer: punct.correct_answer, several_answers: punct.several_answers, testId: testCreate.id})
-       })
 
+        }
+           
+        
+        
+    
         
         return res.json({testCreate})
     }
@@ -27,7 +41,7 @@ class TestController {
     async getOne(req, res) {
         const {id} = req.params
         let test = null;
-        console.log(id);
+    
         try {
             if (id) {
                 test = await Test.findOne(
@@ -54,10 +68,12 @@ class TestController {
         return res.json(test)
     }
 
-    async remakeTest(req, res) {
+    async remakeTest(req, res, next) {
         const {id, title, time_limit, puncts} = req.body;
-       
-    
+        if (!title) {
+            return next(ApiError.internal('Заполните название теста!'))
+        }
+        let new_arr = []
         const testCreate = await Test.findOne({where: {id}})
         testCreate.title = title;
         testCreate.time_limit = time_limit;
@@ -67,13 +83,24 @@ class TestController {
                 where: {testId: id}
             }
         )
-        puncts.forEach( async (punct) => {
+        
+        for (const punct of puncts) {
+            if (!punct.question) {
+                return next(ApiError.internal('Заполните все вопросы в пунктах!'))
+            }
+            
+            if (punct.correct_answer.length == 0) {
+                return next(ApiError.internal('Заполните правильные ответы!'))
+            }
             let punctCreate = await TestPunct.create({question: punct.question, answers: punct.answers, correct_answer: punct.correct_answer, several_answers: punct.several_answers, testId: testCreate.id})
-        })
+
+         
+        }
 
         testCreate.save();
 
-        
+     
+
         return res.json({testCreate})
     }
 

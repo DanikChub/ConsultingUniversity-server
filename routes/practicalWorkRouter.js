@@ -5,6 +5,7 @@ const PracticalWorkController = require('../controllers/practicalWorkController'
 const checkRole = require('../middleware/checkRoleMiddleware')
 
 router.post('/', PracticalWorkController.create)
+router.post('/delete', PracticalWorkController.deletePracticalWork)
 router.get('/:id', PracticalWorkController.getOne)
 router.post('/getOneToUser', PracticalWorkController.getOneToUser)
 router.get('/', PracticalWorkController.getAll)

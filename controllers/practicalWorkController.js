@@ -8,7 +8,7 @@ const { Op } = require('sequelize');
 
 class PracticalWorkController {
     async create(req, res, next) {
-        const {task, users_id, program_id, theme_id, punct_id, practic_title} = req.body;
+        const {task, users_id, user_name, program_id, theme_id, theme_statistic_id, punct_id, practic_title} = req.body;
         const {file_src} = req.files
 
         const cand = await PracticalWork.findOne({
@@ -26,8 +26,8 @@ class PracticalWorkController {
             return res.json(cand);
         }
 
-        
-        const practical_work = await PracticalWork.create({task, file_src: fileName, users_id, program_id: program_id, theme_id: theme_id, punct_id: punct_id, practic_title });
+        console.log('#################################', theme_statistic_id)
+        const practical_work = await PracticalWork.create({task, file_src: fileName, users_id, user_name, program_id: program_id, theme_id: theme_id, theme_statistic_id: theme_statistic_id, punct_id: punct_id, practic_title });
 
         return res.json(practical_work);
     }
@@ -54,22 +54,15 @@ class PracticalWorkController {
     async getAll(req, res) {
         let practical_works = await PracticalWork.findAll();
 
-        async function makePractic() {
-            let practic_copy = practical_works;
+       for (const practical_work of practical_works) {
+            if (!practical_work.user_name) {
+                const user = await User.findOne({where: {id: practical_work.users_id}})
 
-            for (const practic of practic_copy) {
-                const user = await User.findOne({where: {id: practic.users_id}})
-               
-                practic.dataValues["user_name"] = user.name;
+                practical_work.user_name = user.name;
+
+                practical_work.save()
             }
-            
-            return  practic_copy;
-                
-            
-        }
-        
-
-        practical_works = await makePractic();
+       }
 
         
         return res.json(practical_works)
@@ -89,6 +82,15 @@ class PracticalWorkController {
         practical_work.save();
 
         return res.json(practical_work);
+    }
+
+    async deletePracticalWork(req, res) {
+        const {id} = req.body;
+        console.log(id)
+        const practicalWork = await PracticalWork.destroy({where: {id}})
+
+
+        return res.json(practicalWork)
     }
     
 }

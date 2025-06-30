@@ -68,7 +68,7 @@ class StatisticController {
     }
 
     async updatePracticalWorks(req, res) {
-        const {users_id, programs_id} = req.body;
+        const {users_id, programs_id, theme_id} = req.body;
 
         
         
@@ -84,6 +84,16 @@ class StatisticController {
         }
         
         statistic.save();
+    
+        const theme = await ThemeStatistic.findOne({
+            where: {
+                id: theme_id
+            }
+        })
+
+        theme.well = true;
+        theme.save();
+
       
 
         return res.json(statistic)
