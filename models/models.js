@@ -91,8 +91,8 @@ const Test = sequelize.define('test', {
 
 const TestPunct = sequelize.define('test_punct', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    question: {type: DataTypes.STRING},
-    answers: {type: DataTypes.ARRAY(DataTypes.STRING)},
+    question: {type: DataTypes.TEXT},
+    answers: {type: DataTypes.ARRAY(DataTypes.TEXT)},
     correct_answer: {type: DataTypes.ARRAY(DataTypes.INTEGER)},
     several_answers: {type: DataTypes.BOOLEAN},
 })
