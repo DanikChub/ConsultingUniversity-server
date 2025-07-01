@@ -57,10 +57,14 @@ class PracticalWorkController {
        for (const practical_work of practical_works) {
             if (!practical_work.user_name) {
                 const user = await User.findOne({where: {id: practical_work.users_id}})
+                if (user) {
+                    practical_work.user_name = user.name;
 
-                practical_work.user_name = user.name;
-
-                practical_work.save()
+                    practical_work.save()
+                } else {
+                    await PracticalWork.destroy({where: {id: practical_work.id}})
+                }
+                
             }
        }
 

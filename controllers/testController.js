@@ -17,18 +17,22 @@ class TestController {
             return next(ApiError.internal('Заполните название теста!'))
         }
         
-        for (const punct of puncts) {
-            if (!punct.question) {
-                return next(ApiError.internal('Заполните все вопросы в пунктах!'))
-            }
-            
-            if (punct.correct_answer.length == 0) {
-                return next(ApiError.internal('Заполните правильные ответы!'))
-            }
-            let punctCreate = await TestPunct.create({question: punct.question, answers: punct.answers, correct_answer: punct.correct_answer, several_answers: punct.several_answers, testId: testCreate.id})
 
+        try {
+            for (const punct of puncts) {
+                if (!punct.question) {
+                    return next(ApiError.internal('Заполните все вопросы в пунктах!'))
+                }
+                
+                if (punct.correct_answer.length == 0) {
+                    return next(ApiError.internal('Заполните правильные ответы!'))
+                }
+                let punctCreate = await TestPunct.create({question: punct.question, answers: punct.answers, correct_answer: punct.correct_answer, several_answers: punct.several_answers, testId: testCreate.id})
+
+            }
+        } catch(e) {
+            return next(ApiError.badRequest('Ошибка при сохранении пунктов'))
         }
-           
         
         
     
