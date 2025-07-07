@@ -494,9 +494,16 @@ class UserController {
             for (const user of usersFirst) {
                 if (user.role != 'ADMIN') {
                     const statistic = await Statistic.findOne({where: {[Op.and]: [{ users_id: user.id, programs_id: user.programs_id[0] }]}})
-               
-                    user.statistic = Math.round((statistic.well_tests)/(statistic.max_tests)*100);
-                    user.save();
+                    try {
+                        if (statistic.well_tests) {
+                            user.statistic = Math.round((statistic.well_tests)/(statistic.max_tests)*100);
+                            user.save();
+                        }
+                    } catch(e) {
+                        
+                    }
+                    
+                    
                 }
                 
             }

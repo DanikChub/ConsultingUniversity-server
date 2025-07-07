@@ -8,7 +8,7 @@ const { Op } = require('sequelize');
 
 class PracticalWorkController {
     async create(req, res, next) {
-        const {task, users_id, user_name, program_id, theme_id, theme_statistic_id, punct_id, practic_title} = req.body;
+        const {task, task_theme, users_id, user_name, program_id, theme_id, theme_statistic_id, punct_id, practic_title} = req.body;
         const {file_src} = req.files
 
         const cand = await PracticalWork.findOne({
@@ -26,8 +26,7 @@ class PracticalWorkController {
             return res.json(cand);
         }
 
-        console.log('#################################', theme_statistic_id)
-        const practical_work = await PracticalWork.create({task, file_src: fileName, users_id, user_name, program_id: program_id, theme_id: theme_id, theme_statistic_id: theme_statistic_id, punct_id: punct_id, practic_title });
+        const practical_work = await PracticalWork.create({task, task_theme, file_src: fileName, users_id, user_name, program_id: program_id, theme_id: theme_id, theme_statistic_id: theme_statistic_id, punct_id: punct_id, practic_title });
 
         return res.json(practical_work);
     }
@@ -90,7 +89,7 @@ class PracticalWorkController {
 
     async deletePracticalWork(req, res) {
         const {id} = req.body;
-        console.log(id)
+       
         const practicalWork = await PracticalWork.destroy({where: {id}})
 
 

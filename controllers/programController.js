@@ -20,7 +20,7 @@ class ProgramController {
             return next(ApiError.internal( `Программа не имеет названия!`))
             
         }
-        parsedThemes.forEach(theme_el => {
+        parsedThemes.forEach((theme_el, i) => {
             if (!theme_el.title) {
                 errors++
                 return next(ApiError.internal( `Модуль "${theme_el.theme_id + 1}" не имеет названия!`))
@@ -28,7 +28,7 @@ class ProgramController {
             }
             
             let bool = [];
-            theme_el.puncts.forEach(punct_el => {
+            theme_el.puncts.forEach((punct_el, j) => {
                 if (punct_el.test_id) {
                     bool.push(true);
                 }
@@ -38,24 +38,24 @@ class ProgramController {
                 
                 if (!punct_el.lection_title && !punct_el.video_src && !punct_el.test_id && !punct_el.practical_work) {
                     errors++
-                    return next(ApiError.internal( `Пункт "${punct_el.punct_id + 1}" не может быть пустым`))
+                    return next(ApiError.internal( `Тема "${i+1}.${j+1}" не может быть пустым`))
                 }
 
                 if (!punct_el.title) {
                     errors++
-                    return next(ApiError.internal( `Пункт "${punct_el.punct_id + 1}" не имеет названия!`))
+                    return next(ApiError.internal( `Тема "${i+1}.${j+1}" не имеет названия!`))
                     
                 }
             })
             
             if (bool.length == 0) {
                 errors++
-                return next(ApiError.internal( `В теме "${theme_el.title}" нет теста! (В каждой теме должен быть один тест для подсчета статистики!)`))
+                return next(ApiError.internal( `В модуле "${theme_el.title}" нет теста! (В каждой теме должен быть один тест для подсчета статистики!)`))
                
             }
             if (bool.length > 1) {
                 errors++
-                return next(ApiError.internal( `В теме "${theme_el.title}" ${bool.length} тестов! (В каждой теме может быть только один тест для правильного подсчета статистики!)`))
+                return next(ApiError.internal( `В модуле "${theme_el.title}" ${bool.length} тестов! (В каждой теме может быть только один тест для правильного подсчета статистики!)`))
                
             }
         })
@@ -209,7 +209,7 @@ class ProgramController {
                                                         lection_html: html, 
                                                         lection_title: punct_el.lection_title, 
                                                         lection_id: punct_el.lection_id, 
-                                                        practical_work: punct_el.practical_work, 
+                                                        practical_work: punct_el.practical_work, practical_work_task: punct_el.practical_work_task, 
                                                         test_id: punct_el.test_id,
                                                         punct_id: punct_el.punct_id
                                                     })
@@ -217,7 +217,7 @@ class ProgramController {
                                                 })
                                                 .done();
                                             } else {
-                                                punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], lection_html: ``, lection_title: punct_el.lection_title, lection_id: punct_el.lection_id, practical_work: punct_el.practical_work, test_id: punct_el.test_id,
+                                                punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], lection_html: ``, lection_title: punct_el.lection_title, lection_id: punct_el.lection_id, practical_work: punct_el.practical_work, practical_work_task: punct_el.practical_work_task, test_id: punct_el.test_id,
                                                 punct_id: punct_el.punct_id
                                                 })
                                             }
@@ -270,7 +270,7 @@ class ProgramController {
                                                 lection_html: html, 
                                                 lection_title: punct_el.lection_title, 
                                                 lection_id: punct_el.lection_id, 
-                                                practical_work: punct_el.practical_work, 
+                                                practical_work: punct_el.practical_work, practical_work_task: punct_el.practical_work_task, 
                                                 test_id: punct_el.test_id,
                                                 punct_id: punct_el.punct_id
                                             })
@@ -278,7 +278,7 @@ class ProgramController {
                                         })
                                         .done();
                                     } else {
-                                        punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], lection_html: ``, lection_title: punct_el.lection_title, lection_id: punct_el.lection_id, practical_work: punct_el.practical_work, test_id: punct_el.test_id,
+                                        punct = await Punct.create({title: punct_el.title, themeId: theme.id, video_src: punct_el.video_src, lection_src: arr_of_titles[punct_el.lection_id], lection_html: ``, lection_title: punct_el.lection_title, lection_id: punct_el.lection_id, practical_work: punct_el.practical_work, practical_work_task: punct_el.practical_work_task, test_id: punct_el.test_id,
                                         punct_id: punct_el.punct_id
                                         })
                                     }
@@ -676,7 +676,7 @@ class ProgramController {
                                                 lection_html: html, 
                                                 lection_title: punct_el.lection_title, 
                                                 lection_id: punct_el.lection_id, 
-                                                practical_work: punct_el.practical_work, 
+                                                practical_work: punct_el.practical_work, practical_work_task: punct_el.practical_work_task, 
                                                 test_id: punct_el.test_id,
                                                 punct_id: punct_el.punct_id
                                             })
@@ -692,7 +692,7 @@ class ProgramController {
                                             lection_html: punct_el.lection_html, 
                                             lection_title: punct_el.lection_title, 
                                             lection_id: punct_el.lection_id, 
-                                            practical_work: punct_el.practical_work, 
+                                            practical_work: punct_el.practical_work, practical_work_task: punct_el.practical_work_task, 
                                             test_id: punct_el.test_id,
                                             punct_id: punct_el.punct_id
                                         })
@@ -740,7 +740,7 @@ class ProgramController {
                                         lection_html: html, 
                                         lection_title: punct_el.lection_title, 
                                         lection_id: punct_el.lection_id, 
-                                        practical_work: punct_el.practical_work, 
+                                        practical_work: punct_el.practical_work, practical_work_task: punct_el.practical_work_task, 
                                         test_id: punct_el.test_id,
                                         punct_id: punct_el.punct_id
                                     })
@@ -756,7 +756,7 @@ class ProgramController {
                                         lection_html: punct_el.lection_html, 
                                         lection_title: punct_el.lection_title, 
                                         lection_id: punct_el.lection_id, 
-                                        practical_work: punct_el.practical_work, 
+                                        practical_work: punct_el.practical_work, practical_work_task: punct_el.practical_work_task, 
                                         test_id: punct_el.test_id,
                                         punct_id: punct_el.punct_id
                                     })

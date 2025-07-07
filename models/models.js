@@ -78,6 +78,7 @@ const Punct = sequelize.define('punct', {
     lection_id: {type: DataTypes.STRING},
     lection_html: {type: DataTypes.TEXT},
     practical_work: {type: DataTypes.STRING},
+    practical_work_task: {type: DataTypes.TEXT},
     video_src: {type: DataTypes.STRING},
     test_id: {type: DataTypes.STRING},
 })
@@ -96,6 +97,19 @@ const TestPunct = sequelize.define('test_punct', {
     correct_answer: {type: DataTypes.ARRAY(DataTypes.INTEGER)},
     several_answers: {type: DataTypes.BOOLEAN},
 })
+
+const TestStatictis = sequelize.define('test_statistic', {
+    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    user_id: {type: DataTypes.INTEGER},
+    test_id: {type: DataTypes.INTEGER},
+   
+})
+
+const TestPunctStatictis = sequelize.define('test_punct_statistic', {
+    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    user_answer: {type: DataTypes.ARRAY(DataTypes.INTEGER)}
+})
+
 
 const UserProgram = sequelize.define('user_program', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
@@ -135,7 +149,8 @@ const PunctStatistic = sequelize.define('punct_statistic', {
 
 const PracticalWork = sequelize.define('practical_work', {
     id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    task: {type: DataTypes.STRING},
+    task: {type: DataTypes.TEXT},
+    task_theme: {type: DataTypes.STRING},
     practic_title: {type: DataTypes.STRING},
     test: {type: DataTypes.BOOLEAN},
     file_src: {type: DataTypes.STRING},
@@ -165,6 +180,9 @@ Test.belongsTo(Punct)
 Test.hasMany(TestPunct, { onDelete: 'cascade', hooks: true })
 TestPunct.belongsTo(Test);
 
+TestStatictis.hasMany(TestPunctStatictis, { onDelete: 'cascade', hooks: true })
+TestPunctStatictis.belongsTo(TestStatictis);
+
 Admin.hasMany(User)
 User.belongsTo(Admin)
 
@@ -190,5 +208,5 @@ PracticalWork.belongsTo(User)
 
 
 module.exports = {
-    User, Admin, Program, Theme, Punct, Application, Test, TestPunct, Statistic, ThemeStatistic, PunctStatistic, PracticalWork
+    User, Admin, Program, Theme, Punct, Application, Test, TestPunct, Statistic, ThemeStatistic, PunctStatistic, PracticalWork, TestStatictis, TestPunctStatictis
 }

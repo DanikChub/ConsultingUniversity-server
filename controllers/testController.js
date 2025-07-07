@@ -1,4 +1,4 @@
-const { Test, TestPunct } = require("../models/models");
+const { Test, TestPunct, TestStatictis, TestPunctStatictis } = require("../models/models");
 const ApiError = require('../error/ApiError')
 const { Op } = require('sequelize');
 const uuid = require('uuid')
@@ -116,7 +116,96 @@ class TestController {
         return res.json({testCreate})
     }
 
-   
+    async updateTestStatistics(req, res, next) {
+        const {user_id, punctsStatistic, test_id} = req.body;
+
+        let testCreate = await TestStatictis.findOne(
+            {
+                where: {
+                    [Op.and]: [{user_id: user_id, test_id: test_id}]
+                }
+            },
+        )
+    
+        if (testCreate) {
+            
+            const punctsCreate = await TestPunctStatictis.destroy(
+                {
+                    where: {testId: testCreate.id}
+                }
+            )
+            try {
+                for (const punct of punctsStatistic) {
+                    if (punct.user_answer.length == 0) {
+                        return next(ApiError.internal('Заполните правильные ответы!'))
+                    }
+                    let punctCreate = await TestPunctStatictis.create({user_answer: punct, testId: testCreate.id})
+    
+
+    
+                }
+            } catch(e) {
+                return next(ApiError.badRequest('Ошибка при сохранении пунктов'))
+            }
+        } else {
+            testCreate = await TestStatictis.create({user_id: user_id, test_id: test_id})
+            try {
+                for (const punct of punctsStatistic) {
+                  
+                    if (punct.user_answer.length == 0) {
+                        return next(ApiError.internal('Заполните правильные ответы!'))
+                    }
+                    let punctCreate = await TestPunctStatictis.create({user_answer: punct, testId: testCreate.id})
+    
+                }
+            } catch(e) {
+                return next(ApiError.badRequest('Ошибка при сохранении пунктов'))
+            }
+            
+        }
+      
+
+
+      
+        
+    
+        
+        return res.json({testCreate})
+    }
+
+    async getTestStatistic(req, res, next) {
+        const {user_id, test_id} = req.body;
+
+        
+        let test = null;
+    
+        try {
+            if (id) {
+                test = await TestStatictis.findOne(
+                    {
+                        where: {
+                            [Op.and]: [{user_id: user_id, test_id: test_id}]
+                        }
+                    },
+                )
+               
+                const punctsStatistic = await TestPunctStatictis.findAll(
+                    {
+                        where: {testId: test.id}
+                    }
+                )
+        
+                test.dataValues["punctsStatistic"] = puncts
+            }
+            
+        } catch(e) {
+
+        }
+        
+       
+
+        return res.json(test)
+    }
 }
 
 module.exports = new TestController();
